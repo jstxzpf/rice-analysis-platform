@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Optional
 from pydantic import BaseModel
 from datetime import date
-from . import photogroup as pg_schema
 
 class AnalysisResultBase(BaseModel):
     coverage: Optional[float] = None
@@ -12,6 +11,7 @@ class AnalysisResultBase(BaseModel):
     uniformity_index: Optional[float] = None
     tiller_density_estimate: Optional[float] = None
     panicles_per_mu: Optional[float] = None
+    est_basic_seedlings_per_mu: Optional[float] = None
     lodging_status: Optional[str] = None
     estimated_leaf_age: Optional[float] = None
     estimated_tillers_per_plant: Optional[float] = None
@@ -27,12 +27,8 @@ class AnalysisResultCreate(AnalysisResultBase):
 class AnalysisResult(AnalysisResultBase):
     id: int
     photo_group_id: int
-    photo_group: Optional[pg_schema.PhotoGroup] = None
+    photo_group: Optional['PhotoGroup'] = None  # Use string reference to avoid circular import
 
     class Config:
         from_attributes = True
-
-# Update forward refs to resolve circular dependency
-pg_schema.PhotoGroup.model_rebuild()
-AnalysisResult.model_rebuild()
 

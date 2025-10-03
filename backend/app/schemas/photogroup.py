@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import Optional
 from datetime import date
 from pydantic import BaseModel
-from . import analysis_result as ar_schema
 from app.db.models import AnalysisStatusEnum
 
 class PhotoGroupBase(BaseModel):
@@ -26,9 +25,8 @@ class PhotoGroupInDBBase(PhotoGroupBase):
         from_attributes = True
 
 class PhotoGroup(PhotoGroupInDBBase):
-    analysis_result: Optional[ar_schema.AnalysisResult] = None
+    analysis_result: Optional['AnalysisResult'] = None  # Use string reference to avoid circular import
 
-# Update forward refs to resolve circular dependency
-ar_schema.AnalysisResult.model_rebuild()
-PhotoGroup.model_rebuild()
+    class Config:
+        from_attributes = True
 

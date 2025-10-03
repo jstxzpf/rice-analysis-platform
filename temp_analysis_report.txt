@@ -48,69 +48,25 @@
             <span>AI 分析与建议</span>
           </template>
           <div>
-            <h3>AI分析描述</h3>
-            <div class="gemini-text">{{ result.gemini_analysis_text }}</div>
-            
+            <h3>分析描述</h3>
+            <p>{{ result.gemini_analysis_text }}</p>
             <el-divider></el-divider>
-            
-            <h3>AI农事建议</h3>
-            <div class="gemini-text">{{ result.gemini_suggestions }}</div>
+            <h3>农事建议</h3>
+            <p>{{ result.gemini_suggestions }}</p>
           </div>
         </el-card>
       </el-col>
 
       <!-- Right Column: Images -->
       <el-col :span="12">
-        <el-card class="box-card">
-          <template #header>
-            <span>分析影像</span>
-          </template>
-          <el-tabs type="border-card">
-            <el-tab-pane label="无人机俯拍图">
-              <el-image 
-                :src="getImageUrl(result.photo_group.drone_photo_path)" 
-                fit="contain" 
-                :preview-src-list="[getImageUrl(result.photo_group.drone_photo_path)]"
-              >
-                <template #placeholder>
-                  <div>无人机俯拍图</div>
-                </template>
-              </el-image>
-            </el-tab-pane>
-            <el-tab-pane label="0.5米侧拍图">
-              <el-image 
-                :src="getImageUrl(result.photo_group.side_photo_05m_path)" 
-                fit="contain" 
-                :preview-src-list="[getImageUrl(result.photo_group.side_photo_05m_path)]"
-              >
-                <template #placeholder>
-                  <div>0.5米侧拍图</div>
-                </template>
-              </el-image>
-            </el-tab-pane>
-            <el-tab-pane label="3米横向侧拍图">
-              <el-image 
-                :src="getImageUrl(result.photo_group.side_photo_3m_horizontal_path)" 
-                fit="contain" 
-                :preview-src-list="[getImageUrl(result.photo_group.side_photo_3m_horizontal_path)]"
-              >
-                <template #placeholder>
-                  <div>3米横向侧拍图</div>
-                </template>
-              </el-image>
-            </el-tab-pane>
-            <el-tab-pane label="3米纵向侧拍图">
-              <el-image 
-                :src="getImageUrl(result.photo_group.side_photo_3m_vertical_path)" 
-                fit="contain" 
-                :preview-src-list="[getImageUrl(result.photo_group.side_photo_3m_vertical_path)]"
-              >
-                <template #placeholder>
-                  <div>3米纵向侧拍图</div>
-                </template>
-              </el-image>
-            </el-tab-pane>
-          </el-tabs>
+        <el-card>
+            <template #header><span>分析影像</span></template>
+            <div class="image-grid">
+                <el-image :src="getImageUrl(result.photo_group.drone_photo_path)" fit="contain" :preview-src-list="[getImageUrl(result.photo_group.drone_photo_path)]"><template #placeholder><div>无人机俯拍图</div></template></el-image>
+                <el-image :src="getImageUrl(result.photo_group.side_photo_05m_path)" fit="contain" :preview-src-list="[getImageUrl(result.photo_group.side_photo_05m_path)]"><template #placeholder><div>0.5米侧拍图</div></template></el-image>
+                <el-image :src="getImageUrl(result.photo_group.side_photo_3m_horizontal_path)" fit="contain" :preview-src-list="[getImageUrl(result.photo_group.side_photo_3m_horizontal_path)]"><template #placeholder><div>3米横向侧拍图</div></template></el-image>
+                <el-image :src="getImageUrl(result.photo_group.side_photo_3m_vertical_path)" fit="contain" :preview-src-list="[getImageUrl(result.photo_group.side_photo_3m_vertical_path)]"><template #placeholder><div>3米纵向侧拍图</div></template></el-image>
+            </div>
         </el-card>
       </el-col>
     </el-row>
@@ -136,7 +92,6 @@ interface AnalysisResult {
   estimated_plant_spacing_cm?: number;
   seedlings_per_mu?: number;
   panicles_per_mu?: number;
-  tiller_density_estimate?: number;
   pest_risk?: string;
   leaf_color_health?: string;
   lodging_status?: string;
@@ -183,19 +138,6 @@ const pestRiskTag = (risk?: string) => {
     return 'info';
 }
 
-const getDensityStatus = (density?: number) => {
-  if (!density) return 'info';
-  
-  // 理想分蘖密度范围: 150-250 株/m²
-  if (density >= 150 && density <= 250) {
-    return 'success'; // 绿色 - 正常
-  } else if ((density > 100 && density < 150) || (density > 250 && density < 300)) {
-    return 'warning'; // 黄色 - 需要关注
-  } else {
-    return 'exception'; // 红色 - 异常
-  }
-}
-
 const exportToCSV = () => {
     if (!result.value) return;
 
@@ -207,7 +149,6 @@ const exportToCSV = () => {
         estimated_plant_spacing_cm: '株间距估算 (cm)',
         seedlings_per_mu: '亩基本苗数',
         panicles_per_mu: '亩穗数估算',
-        tiller_density_estimate: '分蘖密度 (株/m²)',
         pest_risk: '病虫害风险',
         leaf_color_health: '叶色健康状况',
         lodging_status: '倒伏评估',
@@ -223,65 +164,4 @@ const exportToCSV = () => {
     const row = Object.keys(headers).map(key => {
         let value = data[key as keyof typeof data];
         if (typeof value === 'string') {
-            return `"${value.replace(/"/g, '""')}"`;
-        }
-        return value;
-    }).join(",");
-    
-    csvContent += row + "\r\n";
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `analysis_report_${result.value?.id}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
-</script>
-
-<style scoped>
-.app-container {
-  padding: 20px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.gemini-text {
-  white-space: pre-wrap;
-  line-height: 1.6;
-  color: var(--text-primary);
-}
-
-.density-comparison {
-  margin-top: 10px;
-}
-
-.density-label {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 5px;
-}
-
-:deep(.el-image) {
-  width: 100%;
-  height: 300px;
-}
-
-:deep(.el-image__inner) {
-  object-fit: contain;
-  max-width: 100%;
-  max-height: 100%;
-}
-
-:deep(.el-tabs__content) {
-  height: 350px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-</style>
+            return `"${value.replace(/

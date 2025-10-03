@@ -2,11 +2,11 @@ from sqlalchemy.orm import Session
 from app.db import models
 from app.schemas import photogroup as photogroup_schema
 
-def create_photo_group(db: Session, field_id: int, capture_date: str, rice_variety: str, drone_photo_path: str, side_photo_05m_path: str, side_photo_3m_horizontal_path: str, side_photo_3m_vertical_path: str) -> models.PhotoGroup:
+def create_photo_group(db: Session, photo_group: photogroup_schema.PhotoGroupCreate, drone_photo_path: str, side_photo_05m_path: str, side_photo_3m_horizontal_path: str, side_photo_3m_vertical_path: str) -> models.PhotoGroup:
     db_photogroup = models.PhotoGroup(
-        field_id=field_id,
-        capture_date=capture_date,
-        rice_variety=rice_variety,
+        field_id=photo_group.field_id,
+        capture_date=photo_group.capture_date,
+        rice_variety=photo_group.rice_variety,
         drone_photo_path=drone_photo_path,
         side_photo_05m_path=side_photo_05m_path,
         side_photo_3m_horizontal_path=side_photo_3m_horizontal_path,

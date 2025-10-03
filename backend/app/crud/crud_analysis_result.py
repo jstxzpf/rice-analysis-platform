@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.db import models
 from app.schemas import analysis_result as ar_schema
 from datetime import date
-from typing import List
+from typing import List, Optional
 
 def get_analysis_result(db: Session, result_id: int, owner_id: int) -> models.AnalysisResult | None:
     return (
@@ -35,3 +35,19 @@ def get_analysis_results_for_period(db: Session, owner_id: int, start_date: date
         .filter(models.PhotoGroup.capture_date <= end_date)
         .all()
     )
+
+
+def get_analysis_results_for_field(db: Session, field_id: int, start_date: Optional[date] = None, end_date: Optional[date] = None) -> List[models.AnalysisResult]:
+    query = (
+        db.query(models.AnalysisResult)
+        .join(models.PhotoGroup, models.AnalysisResult.photo_group_id == models.PhotoGroup.id)
+        .filter(models.PhotoGroup.field_id == field_id)
+    )
+    
+    if start_date:
+        query = query.filter(models.PhotoGroup.capture_date >= start_date)
+    
+    if end_date:
+        query = query.filter(models.PhotoGroup.capture_date <= end_date)
+    
+    return query.all()

@@ -66,6 +66,7 @@ class AnalysisResult(Base):
     uniformity_index = Column(Float) # 均匀度指数 (如CV)
     tiller_density_estimate = Column(Float) # 分蘖密度估算 (株/m²)
     panicles_per_mu = Column(Float, nullable=True) # 亩穗数估算
+    est_basic_seedlings_per_mu = Column(Float, nullable=True) # 亩基本苗数估算
     lodging_status = Column(String(100), nullable=True) # 倒伏评估
     estimated_leaf_age = Column(Float, nullable=True) # 估算叶龄
     estimated_tillers_per_plant = Column(Float, nullable=True) # 估算单株分蘖数

@@ -11,6 +11,8 @@ import TrendAnalysis from '../views/TrendAnalysis.vue';
 import VisualAnalysis from '../views/VisualAnalysis.vue';
 import InterFieldComparison from '../views/InterFieldComparison.vue';
 import IntraFieldComparison from '../views/IntraFieldComparison.vue';
+import Heatmap from '../views/Heatmap.vue';
+import RegionalDifferences from '../views/RegionalDifferences.vue';
 import RequestPasswordReset from '../views/RequestPasswordReset.vue';
 import ResetPassword from '../views/ResetPassword.vue';
 import UserManagement from '../views/UserManagement.vue';
@@ -80,6 +82,16 @@ const routes = [
                         path: 'intra-field',
                         name: 'IntraFieldComparison',
                         component: IntraFieldComparison,
+                    },
+                    {
+                        path: 'heatmap',
+                        name: 'Heatmap',
+                        component: Heatmap,
+                    },
+                    {
+                        path: 'regional-differences',
+                        name: 'RegionalDifferences',
+                        component: RegionalDifferences,
                     },
                 ]
             },
