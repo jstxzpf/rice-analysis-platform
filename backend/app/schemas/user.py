@@ -15,6 +15,8 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     created_at: datetime
+    reset_password_token: Optional[str] = None
+    reset_password_token_expiry: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -23,6 +25,8 @@ class User(UserBase):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    username: str
+    role: str
 
 # Schema for data stored in JWT
 class TokenData(BaseModel):

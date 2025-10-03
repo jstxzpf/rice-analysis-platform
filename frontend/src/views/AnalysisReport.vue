@@ -1,6 +1,153 @@
 <template>
-  <div class="app-container">
-    <h1>分析报告详情</h1>
-    <p>这里将展示单次分析的详细结果，包括图片和数据。</p>
+  <div class="app-container" v-if="result">
+    <h1>分析报告 ({{ result.photo_group.capture_date }})</h1>
+
+    <el-row :gutter="20">
+      <!-- Left Column: Metrics and Gemini Analysis -->
+      <el-col :span="12">
+        <el-card class="box-card">
+          <template #header>
+            <div class="card-header">
+              <span>核心指标</span>
+              <el-button class="button" type="primary" @click="exportToCSV">导出为CSV</el-button>
+            </div>
+          </template>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="冠层覆盖度">{{ result.coverage }} %</el-descriptions-item>
+            <el-descriptions-item label="平均株高">{{ result.avg_plant_height }} cm</el-descriptions-item>
+            <el-descriptions-item label="行间距估算">{{ result.estimated_row_spacing_cm }} cm</el-descriptions-item>
+            <el-descriptions-item label="株间距估算">{{ result.estimated_plant_spacing_cm }} cm</el-descriptions-item>
+            <el-descriptions-item label="亩基本苗数">{{ result.seedlings_per_mu }}</el-descriptions-item>
+            <el-descriptions-item label="亩穗数估算">{{ result.panicles_per_mu }}</el-descriptions-item>
+            <el-descriptions-item label="病虫害风险">
+              <el-tag :type="pestRiskTag(result.pest_risk)">{{ result.pest_risk }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="叶色健康状况">{{ result.leaf_color_health }}</el-descriptions-item>
+            <el-descriptions-item label="倒伏评估">{{ result.lodging_status }}</el-descriptions-item>
+            <el-descriptions-item label="估算叶龄">{{ result.estimated_leaf_age }}</el-descriptions-item>
+            <el-descriptions-item label="单株分蘖数">{{ result.estimated_tillers_per_plant }}</el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+
+        <el-card class="box-card" style="margin-top: 20px;">
+          <template #header>
+            <span>AI 分析与建议</span>
+          </template>
+          <div>
+            <h3>分析描述</h3>
+            <p>{{ result.gemini_analysis_text }}</p>
+            <el-divider></el-divider>
+            <h3>农事建议</h3>
+            <p>{{ result.gemini_suggestions }}</p>
+          </div>
+        </el-card>
+      </el-col>
+
+      <!-- Right Column: Images -->
+      <el-col :span="12">
+        <el-card>
+            <template #header><span>分析影像</span></template>
+            <div class="image-grid">
+                <el-image :src="getImageUrl(result.photo_group.drone_photo_path)" fit="contain" :preview-src-list="[getImageUrl(result.photo_group.drone_photo_path)]"><template #placeholder><div>无人机俯拍图</div></template></el-image>
+                <el-image :src="getImageUrl(result.photo_group.side_photo_05m_path)" fit="contain" :preview-src-list="[getImageUrl(result.photo_group.side_photo_05m_path)]"><template #placeholder><div>0.5米侧拍图</div></template></el-image>
+                <el-image :src="getImageUrl(result.photo_group.side_photo_3m_horizontal_path)" fit="contain" :preview-src-list="[getImageUrl(result.photo_group.side_photo_3m_horizontal_path)]"><template #placeholder><div>3米横向侧拍图</div></template></el-image>
+                <el-image :src="getImageUrl(result.photo_group.side_photo_3m_vertical_path)" fit="contain" :preview-src-list="[getImageUrl(result.photo_group.side_photo_3m_vertical_path)]"><template #placeholder><div>3米纵向侧拍图</div></template></el-image>
+            </div>
+        </el-card>
+      </el-col>
+    </el-row>
+  </div>
+  <div v-else>
+    <p>正在加载分析报告...</p>
   </div>
 </template>
+
+<script lang="ts" setup>
+import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
+import apiClient from '../api';
+import { ElMessage } from 'element-plus';
+
+// Define the structure of the analysis result
+interface AnalysisResult {
+  id: number;
+  photo_group_id: number;
+  coverage?: number;
+  avg_plant_height?: number;
+  estimated_row_spacing_cm?: number;
+  estimated_plant_spacing_cm?: number;
+  seedlings_per_mu?: number;
+  panicles_per_mu?: number;
+  pest_risk?: string;
+  leaf_color_health?: string;
+  lodging_status?: string;
+  estimated_leaf_age?: number;
+  estimated_tillers_per_plant?: number;
+  gemini_analysis_text?: string;
+  gemini_suggestions?: string;
+  photo_group: {
+    capture_date: string;
+    drone_photo_path: string;
+    side_photo_05m_path: string;
+    side_photo_3m_horizontal_path: string;
+    side_photo_3m_vertical_path: string;
+  };
+}
+
+const route = useRoute();
+const result = ref<AnalysisResult | null>(null);
+const backendUrl = 'http://localhost:8000'; // Assuming backend is on port 8000
+
+const fetchAnalysisResult = async () => {
+  const resultId = route.params.id;
+  try {
+    const response = await apiClient.get(`/analysis/results/${resultId}`);
+    result.value = response.data;
+  } catch (error) {
+    ElMessage.error('加载分析报告失败');
+    console.error(error);
+  }
+};
+
+onMounted(fetchAnalysisResult);
+
+const getImageUrl = (path: string) => {
+    if (!path) return '';
+    // Assuming the backend serves the uploads folder statically
+    return `${backendUrl}/${path}`;
+}
+
+const pestRiskTag = (risk?: string) => {
+    if (risk === 'Low') return 'success';
+    if (risk === 'Moderate') return 'warning';
+    if (risk === 'High' || risk === 'Visible Evidence') return 'danger';
+    return 'info';
+}
+
+const exportToCSV = () => {
+    if (!result.value) return;
+
+    const data = result.value;
+    const headers = {
+        coverage: '冠层覆盖度 (%)',
+        avg_plant_height: '平均株高 (cm)',
+        estimated_row_spacing_cm: '行间距估算 (cm)',
+        estimated_plant_spacing_cm: '株间距估算 (cm)',
+        seedlings_per_mu: '亩基本苗数',
+        panicles_per_mu: '亩穗数估算',
+        pest_risk: '病虫害风险',
+        leaf_color_health: '叶色健康状况',
+        lodging_status: '倒伏评估',
+        estimated_leaf_age: '估算叶龄',
+        estimated_tillers_per_plant: '单株分蘖数',
+        gemini_analysis_text: 'AI分析描述',
+        gemini_suggestions: 'AI农事建议'
+    };
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += Object.values(headers).join(",") + "\r\n";
+    
+    const row = Object.keys(headers).map(key => {
+        let value = data[key as keyof typeof data];
+        if (typeof value === 'string') {
+            return `"${value.replace(/

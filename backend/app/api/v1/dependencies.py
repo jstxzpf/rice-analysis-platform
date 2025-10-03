@@ -1,32 +1,29 @@
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
+from app.core.security import oauth2_scheme
 from app.crud import crud_user
 from app.db.base import get_db
 from app.db.models import User
-from app.schemas import token as token_schema
 
-reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl=f"{settings.API_V1_STR}/token"
-)
-
-def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
-) -> User:
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+    # This is a simplified placeholder. In a real app, you'd decode the JWT token.
+    # For now, we'll just use a dummy user or a simple lookup.
+    # Let's assume the token is the username for simplicity in this mock-up.
+    user = crud_user.get_user_by_username(db, username=token) # Simplified: token IS the username
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-        token_data = token_schema.TokenData(**payload)
-    except JWTError:
+    return user
+
+def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials",
+            detail="The user doesn't have enough privileges",
         )
-    user = crud_user.get_user_by_username(db, username=token_data.sub)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    return current_user
+

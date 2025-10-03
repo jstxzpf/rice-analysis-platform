@@ -1,5 +1,5 @@
 from typing import List
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from datetime import datetime, date
 
 from app.db import models
@@ -10,6 +10,18 @@ def get_field(db: Session, field_id: int):
 
 def get_fields_by_owner(db: Session, owner_id: int, skip: int = 0, limit: int = 100) -> List[models.Field]:
     return db.query(models.Field).filter(models.Field.owner_id == owner_id).offset(skip).limit(limit).all()
+
+def get_field_results(db: Session, field_id: int, owner_id: int) -> List[models.PhotoGroup]:
+    field = get_field(db, field_id)
+    if not field or field.owner_id != owner_id:
+        return []
+    return (
+        db.query(models.PhotoGroup)
+        .options(joinedload(models.PhotoGroup.analysis_result))
+        .filter(models.PhotoGroup.field_id == field_id)
+        .order_by(models.PhotoGroup.capture_date.desc())
+        .all()
+    )
 
 def create_field_for_user(db: Session, field: field_schema.FieldCreate, owner_id: int) -> models.Field:
     field_data = field.dict()

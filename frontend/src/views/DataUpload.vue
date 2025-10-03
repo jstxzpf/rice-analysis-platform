@@ -16,26 +16,80 @@
             <el-option v-for="item in riceVarieties" :key="item" :label="item" :value="item"></el-option>
           </el-select>
         </el-form-item>
+
         <el-form-item label="无人机俯拍图">
-          <el-upload action="#" :auto-upload="false" :on-change="(file) => handleFileChange(file, 'drone_photo')">
-            <el-button type="primary">点击上传</el-button>
+          <el-upload
+            action="#"
+            :auto-upload="false"
+            list-type="picture-card"
+            :limit="1"
+            :on-exceed="handleExceed"
+            :on-change="(file, fileList) => handleFileChange(file, fileList, 'drone_photo')"
+            :on-preview="handlePictureCardPreview"
+            :on-remove="() => handleRemove('drone_photo')"
+            accept="image/jpeg,image/png"
+          >
+            <el-icon><Plus /></el-icon>
           </el-upload>
         </el-form-item>
+
         <el-form-item label="0.5米侧拍图">
-          <el-upload action="#" :auto-upload="false" :on-change="(file) => handleFileChange(file, 'side_photo_05m')">
-            <el-button type="primary">点击上传</el-button>
+          <el-upload
+            action="#"
+            :auto-upload="false"
+            list-type="picture-card"
+            :limit="1"
+            :on-exceed="handleExceed"
+            :on-change="(file, fileList) => handleFileChange(file, fileList, 'side_photo_05m')"
+            :on-preview="handlePictureCardPreview"
+            :on-remove="() => handleRemove('side_photo_05m')"
+            accept="image/jpeg,image/png"
+          >
+            <el-icon><Plus /></el-icon>
           </el-upload>
         </el-form-item>
-        <el-form-item label="3米侧拍图">
-          <el-upload action="#" :auto-upload="false" :on-change="(file) => handleFileChange(file, 'side_photo_3m')">
-            <el-button type="primary">点击上传</el-button>
+
+        <el-form-item label="3米横向侧拍图">
+          <el-upload
+            action="#"
+            :auto-upload="false"
+            list-type="picture-card"
+            :limit="1"
+            :on-exceed="handleExceed"
+            :on-change="(file, fileList) => handleFileChange(file, fileList, 'side_photo_3m_horizontal')"
+            :on-preview="handlePictureCardPreview"
+            :on-remove="() => handleRemove('side_photo_3m_horizontal')"
+            accept="image/jpeg,image/png"
+          >
+            <el-icon><Plus /></el-icon>
           </el-upload>
         </el-form-item>
+
+        <el-form-item label="3米纵向侧拍图">
+          <el-upload
+            action="#"
+            :auto-upload="false"
+            list-type="picture-card"
+            :limit="1"
+            :on-exceed="handleExceed"
+            :on-change="(file, fileList) => handleFileChange(file, fileList, 'side_photo_3m_vertical')"
+            :on-preview="handlePictureCardPreview"
+            :on-remove="() => handleRemove('side_photo_3m_vertical')"
+            accept="image/jpeg,image/png"
+          >
+            <el-icon><Plus /></el-icon>
+          </el-upload>
+        </el-form-item>
+
         <el-form-item>
           <el-button type="success" @click="handleSubmit">提交分析</el-button>
         </el-form-item>
       </el-form>
     </el-card>
+
+    <el-dialog v-model="dialogVisible">
+      <img w-full :src="dialogImageUrl" alt="Preview Image" />
+    </el-dialog>
   </div>
 </template>
 
@@ -43,7 +97,8 @@
 import { ref, onMounted, reactive } from 'vue';
 import apiClient from '../api';
 import { ElMessage } from 'element-plus';
-import type { UploadFile } from 'element-plus';
+import type { UploadFile, UploadUserFile } from 'element-plus';
+import { Plus } from '@element-plus/icons-vue';
 
 interface Field {
   id: number;
@@ -67,8 +122,12 @@ const form = reactive({
   rice_variety: '' as string,
   drone_photo: null as (File | null),
   side_photo_05m: null as (File | null),
-  side_photo_3m: null as (File | null),
+  side_photo_3m_horizontal: null as (File | null),
+  side_photo_3m_vertical: null as (File | null),
 });
+
+const dialogImageUrl = ref('');
+const dialogVisible = ref(false);
 
 const fetchFields = async () => {
   try {
@@ -81,8 +140,21 @@ const fetchFields = async () => {
 
 onMounted(fetchFields);
 
-const handleFileChange = (file: UploadFile, type: keyof typeof form) => {
-  form[type] = file.raw as File;
+const handleFileChange = (uploadFile: UploadFile, uploadFiles: UploadUserFile[], type: keyof typeof form) => {
+  form[type] = uploadFile.raw as File;
+};
+
+const handleRemove = (type: keyof typeof form) => {
+  form[type] = null;
+};
+
+const handlePictureCardPreview = (uploadFile: UploadFile) => {
+  dialogImageUrl.value = uploadFile.url!;
+  dialogVisible.value = true;
+};
+
+const handleExceed = () => {
+  ElMessage.warning('每个类别只能上传一张图片');
 };
 
 const handleSubmit = async () => {
@@ -92,7 +164,8 @@ const handleSubmit = async () => {
   if (form.rice_variety) formData.append('rice_variety', form.rice_variety);
   if (form.drone_photo) formData.append('drone_photo', form.drone_photo);
   if (form.side_photo_05m) formData.append('side_photo_05m', form.side_photo_05m);
-  if (form.side_photo_3m) formData.append('side_photo_3m', form.side_photo_3m);
+  if (form.side_photo_3m_horizontal) formData.append('side_photo_3m_horizontal', form.side_photo_3m_horizontal);
+  if (form.side_photo_3m_vertical) formData.append('side_photo_3m_vertical', form.side_photo_3m_vertical);
 
   try {
     const response = await apiClient.post('/photogroups/upload', formData, {

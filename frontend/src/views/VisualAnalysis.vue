@@ -1,37 +1,31 @@
 <template>
-  <div class="pa-6">
-    <v-row>
-      <v-col md="8" offset-md="2">
-        <v-card>
-          <v-card-title class="d-flex justify-space-between">
-            可视化分析中心
-          </v-card-title>
-          <v-card-text>
-            <p>请选择您要使用的分析功能：</p>
-            <v-list>
-              <v-list-item to="/visual-analysis/inter-field">
-                <v-list-item-icon>
-                  <v-icon>mdi-chart-bar</v-icon>
-                </v-list-item-icon>
-                <v-list-item-content>
-                  <v-list-item-title>跨田块长势对比</v-list-item-title>
-                  <v-list-item-subtitle>同时期内，不同田块的各项指标对比</v-list-item-subtitle>
-                </v-list-item-content>
-              </v-list-item>
-              <v-list-item to="/visual-analysis/intra-field">
-                <v-list-item-icon>
-                  <v-icon>mdi-chart-line</v-icon>
-                </v-list-item-icon>
-                <v-list-item-content>
-                  <v-list-item-title>单田块长势追踪</v-list-item-title>
-                  <v-list-item-subtitle>同一田块，不同时期各项指标的变化趋势</v-list-item-subtitle>
-                </v-list-item-content>
-              </v-list-item>
-            </v-list>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+  <div style="padding: 32px; max-width: 700px; margin: 0 auto;">
+    <el-card>
+      <template #header>
+        <span style="font-size: 20px; font-weight: bold;">可视化分析中心</span>
+      </template>
+      <div style="margin-bottom: 16px;">请选择您要使用的分析功能：</div>
+      <el-row gutter="20">
+        <el-col :span="24">
+          <el-link type="primary" :underline="false" style="font-size: 18px; display: flex; align-items: center; margin-bottom: 12px;" :to="{ path: '/visual-analysis/inter-field' }" router>
+            <el-icon style="margin-right: 12px;"><i class="el-icon-data-analysis" /></el-icon>
+            <div>
+              <div style="font-weight: 500;">跨田块长势对比</div>
+              <div style="font-size: 12px; color: #888;">同时期内，不同田块的各项指标对比</div>
+            </div>
+          </el-link>
+        </el-col>
+        <el-col :span="24">
+          <el-link type="primary" :underline="false" style="font-size: 18px; display: flex; align-items: center;" :to="{ path: '/visual-analysis/intra-field' }" router>
+            <el-icon style="margin-right: 12px;"><i class="el-icon-trend-charts" /></el-icon>
+            <div>
+              <div style="font-weight: 500;">单田块长势追踪</div>
+              <div style="font-size: 12px; color: #888;">同一田块，不同时期各项指标的变化趋势</div>
+            </div>
+          </el-link>
+        </el-col>
+      </el-row>
+    </el-card>
   </div>
 </template>
 

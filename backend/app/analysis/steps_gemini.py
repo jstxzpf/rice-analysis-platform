@@ -28,37 +28,47 @@ def analyze_with_gemini(drone_image_path: str, side_image_05m_path: str, side_im
         You are an expert agricultural analyst specializing in rice cultivation.
         Analyze the following FOUR images of a rice paddy:
         1. A top-down drone view (Image 1).
-        2. A horizontal side view of the plants (Image 2).
-        3. A vertical side view of the plants, which includes a 1x2 meter board for scale (Image 3).
+        2. A 3-meter horizontal side view of the plants (Image 2).
+        3. A 3-meter vertical side view of the plants (Image 3).
         4. A 0.5m close-up side view of a plant (Image 4).
 
-        Based on these images, provide a comprehensive analysis. Your response MUST be a single JSON object with two keys: "analysis" and "metrics".
+        Your primary goal is to calculate key density metrics. Your response MUST be a single JSON object with two keys: "analysis" and "metrics".
 
-        1. The "analysis" key should contain an object with two string values:
-           - "description": A detailed text analysis of the rice's growth status. Integrate insights from all four views. Use the close-up view (Image 4) to comment on fine details like leaf texture, dew, or potential early-stage issues.
-           - "suggestions": Actionable farming advice based on your analysis.
+        1.  **Analysis Key**:
+            -   `description`: A detailed text analysis of the rice's growth status.
+            -   `suggestions`: Actionable farming advice.
 
-        2. The "metrics" key should contain an object with your best estimate for the following values:
-           - "pest_risk": (String) Use the close-up view (Image 4) to look for subtle signs like insect eggs, small spots, or discoloration to refine this risk. "Low", "Moderate", "High", or "Visible Evidence".
-           - "leaf_color_health": (String) "Healthy Green", "Yellowish", "Dark Green", "Uneven".
-           - "lodging_status": (String) Assess the degree of plant lodging from the vertical view (Image 3). "None", "Slight", "Moderate", "Severe".
-           - "estimated_leaf_age": (Float) Use the close-up view (Image 4) to get a more accurate estimate of the average leaf age of the main stem.
-           - "estimated_tillers_per_plant": (Float) Use the close-up view (Image 4) to refine your estimate of the average number of tillers per plant/hill.
-           - "panicle_count_in_sample": (Integer) From the vertical view (Image 3), carefully count the number of rice panicles visible in the 2 square meter area in front of the 1x2m board.
+        2.  **Metrics Key**: Provide your best estimate for the following values.
+            *   **Spacing Analysis (Crucial)**:
+                -   `estimated_row_spacing_cm` (Float): From the horizontal view (Image 2), estimate the average distance between plant rows in centimeters.
+                -   `estimated_plant_spacing_cm` (Float): From the vertical view (Image 3), estimate the average distance between individual plants/hills in the same row in centimeters.
+            *   **Density Calculations**:
+                -   `seedlings_per_mu` (Integer): Based on your estimated row and plant spacing, calculate the approximate number of seedlings per mu (亩). 1 mu = 666.67 square meters. The formula is `(666.67 * 10000) / (row_spacing_cm * plant_spacing_cm)`.
+                -   `panicles_per_mu` (Integer): First, count the number of panicles in a 1-meter length from the horizontal view (Image 2) to get `panicle_count_in_1m_sample`. Then, use your estimated row spacing to calculate panicles per mu. The formula is `panicle_count_in_1m_sample * (666.67 * 100 / estimated_row_spacing_cm)`.
+            *   **General Metrics**:
+                -   `pest_risk`: (String) "Low", "Moderate", "High", or "Visible Evidence".
+                -   `leaf_color_health`: (String) "Healthy Green", "Yellowish", "Dark Green", "Uneven".
+                -   `lodging_status`: (String) "None", "Slight", "Moderate", "Severe".
+                -   `estimated_leaf_age`: (Float) Average leaf age of the main stem.
+                -   `estimated_tillers_per_plant`: (Float) Average number of tillers per plant/hill.
+
 
         Example of a valid JSON response:
         {
           "analysis": {
-            "description": "...The close-up view reveals healthy leaf texture with no visible signs of fungal infection...",
-            "suggestions": "...The high-resolution view confirms no immediate need for fungicides..."
+            "description": "The rice plants show uniform growth. The horizontal and vertical views allow for an accurate assessment of plant spacing.",
+            "suggestions": "Maintain current irrigation and fertilization schedules. The plant density is optimal."
           },
           "metrics": {
+            "estimated_row_spacing_cm": 25.0,
+            "estimated_plant_spacing_cm": 15.0,
+            "seedlings_per_mu": 17778,
+            "panicles_per_mu": 450000,
             "pest_risk": "Low",
             "leaf_color_health": "Healthy Green",
             "lodging_status": "None",
             "estimated_leaf_age": 12.5,
-            "estimated_tillers_per_plant": 22.0,
-            "panicle_count_in_sample": 125
+            "estimated_tillers_per_plant": 22.0
           }
         }
         """
@@ -73,14 +83,8 @@ def analyze_with_gemini(drone_image_path: str, side_image_05m_path: str, side_im
         analysis = result_json.get("analysis", {})
         metrics = result_json.get("metrics", {})
 
-        # Calculate panicles per mu from the sample count
-        panicles_per_mu = 0
-        panicle_count_in_sample = metrics.get("panicle_count_in_sample")
-        if isinstance(panicle_count_in_sample, int):
-            # Extrapolate from 2 sq. meters to 1 mu (666.67 sq. meters)
-            panicles_per_mu = round((panicle_count_in_sample / 2) * 666.67)
-
         # Prepare the dictionary for database insertion
+        # The Gemini model is now expected to calculate these values directly.
         gemini_results = {
             "gemini_analysis_text": analysis.get("description"),
             "gemini_suggestions": analysis.get("suggestions"),
@@ -89,7 +93,11 @@ def analyze_with_gemini(drone_image_path: str, side_image_05m_path: str, side_im
             "lodging_status": metrics.get("lodging_status"),
             "estimated_leaf_age": metrics.get("estimated_leaf_age"),
             "estimated_tillers_per_plant": metrics.get("estimated_tillers_per_plant"),
-            "panicles_per_mu": panicles_per_mu,
+            "panicles_per_mu": metrics.get("panicles_per_mu"),
+            # Add new fields, even if they are None
+            "seedlings_per_mu": metrics.get("seedlings_per_mu"),
+            "estimated_row_spacing_cm": metrics.get("estimated_row_spacing_cm"),
+            "estimated_plant_spacing_cm": metrics.get("estimated_plant_spacing_cm"),
         }
         
         print("Gemini analysis completed successfully.")

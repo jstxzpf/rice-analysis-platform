@@ -20,6 +20,8 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(20), default="user")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    reset_password_token = Column(String(255), nullable=True, index=True)
+    reset_password_token_expiry = Column(DateTime(timezone=True), nullable=True)
     
     fields = relationship("Field", back_populates="owner")
 

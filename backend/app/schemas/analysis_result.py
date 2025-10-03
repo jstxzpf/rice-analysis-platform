@@ -1,6 +1,8 @@
+from __future__ import annotations
 from typing import Optional
 from pydantic import BaseModel
 from datetime import date
+from . import photogroup as pg_schema
 
 class AnalysisResultBase(BaseModel):
     coverage: Optional[float] = None
@@ -25,22 +27,12 @@ class AnalysisResultCreate(AnalysisResultBase):
 class AnalysisResult(AnalysisResultBase):
     id: int
     photo_group_id: int
+    photo_group: Optional[pg_schema.PhotoGroup] = None
 
     class Config:
         from_attributes = True
 
-# Schema for providing field info along with analysis
-class FieldForAnalysis(BaseModel):
-    id: int
-    name: str
-    class Config:
-        from_attributes = True
+# Update forward refs to resolve circular dependency
+pg_schema.PhotoGroup.model_rebuild()
+AnalysisResult.model_rebuild()
 
-class PhotoGroupForAnalysis(BaseModel):
-    capture_date: date
-    field: FieldForAnalysis
-    class Config:
-        from_attributes = True
-
-class AnalysisResultWithField(AnalysisResult):
-    photo_group: PhotoGroupForAnalysis

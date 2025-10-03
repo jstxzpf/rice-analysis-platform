@@ -5,7 +5,7 @@
         active-text-color="#ffd04b"
         background-color="#545c64"
         class="el-menu-vertical-demo"
-        default-active="/fields"
+        :default-active="$route.path"
         text-color="#fff"
         router
       >
@@ -21,6 +21,9 @@
         <el-menu-item index="/visual-analysis/home">
           <span>可视化分析</span>
         </el-menu-item>
+        <el-menu-item v-if="isAdmin" index="/user-management">
+          <span>用户管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
@@ -28,7 +31,7 @@
         <div class="toolbar">
           <el-dropdown>
             <span class="el-dropdown-link">
-              {{ currentUser.username || '用户' }}<el-icon class="el-icon--right"><arrow-down /></el-icon>
+              {{ username || '用户' }}<el-icon class="el-icon--right"><arrow-down /></el-icon>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
@@ -48,29 +51,22 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import apiClient from '../api';
 import { ElMessage } from 'element-plus';
 import { ArrowDown } from '@element-plus/icons-vue'
 
 const router = useRouter();
-const currentUser = ref({ username: '' });
+const username = ref('');
+const isAdmin = ref(false);
 
-const fetchCurrentUser = async () => {
-    try {
-        const response = await apiClient.get('/users/me');
-        currentUser.value = response.data;
-    } catch (error) {
-        console.error("获取当前用户信息失败", error);
-        // May redirect to login if token is invalid
-        localStorage.removeItem('access_token');
-        router.push('/login');
-    }
-};
-
-onMounted(fetchCurrentUser);
+onMounted(() => {
+    username.value = localStorage.getItem('username') || '';
+    isAdmin.value = localStorage.getItem('user_role') === 'admin';
+});
 
 const handleLogout = () => {
     localStorage.removeItem('access_token');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('username');
     router.push('/login');
     ElMessage.success('您已成功退出登录');
 };

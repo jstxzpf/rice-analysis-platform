@@ -11,6 +11,9 @@ import TrendAnalysis from '../views/TrendAnalysis.vue';
 import VisualAnalysis from '../views/VisualAnalysis.vue';
 import InterFieldComparison from '../views/InterFieldComparison.vue';
 import IntraFieldComparison from '../views/IntraFieldComparison.vue';
+import RequestPasswordReset from '../views/RequestPasswordReset.vue';
+import ResetPassword from '../views/ResetPassword.vue';
+import UserManagement from '../views/UserManagement.vue';
 
 const routes = [
     {
@@ -52,6 +55,11 @@ const routes = [
                 props: true,
             },
             {
+                path: 'user-management',
+                name: 'UserManagement',
+                component: UserManagement,
+            },
+            {
                 path: 'visual-analysis',
                 component: {
                     template: '<router-view />',
@@ -88,6 +96,16 @@ const routes = [
         name: 'Register',
         component: Register,
     },
+    {
+        path: '/request-password-reset',
+        name: 'RequestPasswordReset',
+        component: RequestPasswordReset,
+    },
+    {
+        path: '/reset-password',
+        name: 'ResetPassword',
+        component: ResetPassword,
+    },
 ];
 
 const router = createRouter({
@@ -97,7 +115,7 @@ const router = createRouter({
 
 // Navigation guard
 router.beforeEach((to, from, next) => {
-    const publicPages = ['Login', 'Register'];
+    const publicPages = ['Login', 'Register', 'RequestPasswordReset', 'ResetPassword'];
     const authRequired = !publicPages.includes(to.name as string);
     const token = localStorage.getItem('access_token');
 

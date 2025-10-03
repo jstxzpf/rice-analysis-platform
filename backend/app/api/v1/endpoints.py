@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -12,9 +12,10 @@ from app.db.models import User
 from app.schemas import analysis_result as ar_schema
 from app.schemas import field as field_schema
 from app.schemas import user as user_schema
+from app.schemas import photogroup as pg_schema
 from app.schemas.token import Token
 
-from .dependencies import get_current_user
+from .dependencies import get_current_user, get_current_admin_user
 
 router = APIRouter()
 analysis_router = APIRouter()
@@ -41,7 +42,12 @@ def login_for_access_token(
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "username": user.username,
+        "role": user.role
+    }
 
 
 # endregion
@@ -62,6 +68,54 @@ def create_user(user: user_schema.UserCreate, db: Session = Depends(get_db)):
 @router.get("/users/me", response_model=user_schema.User, tags=["Users"])
 def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@router.get("/users/", response_model=List[user_schema.User], tags=["Users"])
+def read_users(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    """
+    Retrieve all users. Admin only.
+    """
+    users = crud_user.get_users(db, skip=skip, limit=limit)
+    return users
+
+@router.post("/password-recovery/{username}", response_model=dict, tags=["Users"])
+def recover_password(username: str, db: Session = Depends(get_db)):
+    """
+    Password Recovery. In a real system, this would send an email.
+    For this demo, it generates a token and prints it to the console.
+    """
+    user = crud_user.get_user_by_username(db, username=username)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="The user with this username does not exist.",
+        )
+    user_with_token = crud_user.create_password_reset_token(db, user=user)
+    # In a real app, you would send an email with the token.
+    print(f"Password reset token for user {username}: {user_with_token.reset_password_token}")
+    return {"message": "Password recovery email sent (check console for token)."}
+
+
+@router.post("/reset-password/", response_model=dict, tags=["Users"])
+def reset_password(
+    token: str = Body(...),
+    new_password: str = Body(...),
+    db: Session = Depends(get_db),
+):
+    """
+    Reset password.
+    """
+    user = crud_user.get_user_by_password_reset_token(db, token=token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token"
+        )
+    crud_user.reset_password(db, user=user, new_password=new_password)
+    return {"message": "Password updated successfully"}
 
 
 # endregion
@@ -103,6 +157,16 @@ def read_field(
         raise HTTPException(status_code=403, detail="Not enough permissions")
     return db_field
 
+@router.get("/fields/{field_id}/results", response_model=List[pg_schema.PhotoGroup], tags=["Fields"])
+def read_field_results(
+    field_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retrieve all analysis photo groups for a specific field."""
+    results = crud_field.get_field_results(db, field_id=field_id, owner_id=current_user.id)
+    return results
+
 
 @router.put("/fields/{field_id}", response_model=field_schema.Field, tags=["Fields"])
 def update_field(
@@ -138,8 +202,29 @@ def delete_field(
 
 # region Analysis
 @analysis_router.get(
+    "/results/{result_id}",
+    response_model=ar_schema.AnalysisResult,
+    tags=["Analysis"],
+)
+def get_analysis_result(
+    result_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieve a single analysis result by its ID.
+    """
+    result = crud_analysis_result.get_analysis_result(
+        db=db, result_id=result_id, owner_id=current_user.id
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Analysis result not found")
+    return result
+
+
+@analysis_router.get(
     "/inter-field-comparison/",
-    response_model=List[ar_schema.AnalysisResultWithField],
+    response_model=List[ar_schema.AnalysisResult],
     tags=["Analysis"],
 )
 def get_inter_field_comparison(

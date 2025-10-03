@@ -26,7 +26,15 @@
         <el-form-item label="名称">
           <el-input v-model="currentField.name"></el-input>
         </el-form-item>
-        <el-form-item label="位置">
+        <el-form-item>
+          <template #label>
+            <span>
+              位置
+              <el-tooltip content="格式: 纬度,经度 (例如: 31.23,121.47)" placement="top">
+                <el-icon><QuestionFilled /></el-icon>
+              </el-tooltip>
+            </span>
+          </template>
           <el-input v-model="currentField.location"></el-input>
         </el-form-item>
         <el-form-item label="面积 (亩)">
@@ -48,6 +56,7 @@
 import { ref, onMounted } from 'vue';
 import apiClient from '../api';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { QuestionFilled } from '@element-plus/icons-vue';
 
 interface Field {
   id?: number;

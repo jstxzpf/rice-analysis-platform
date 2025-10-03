@@ -51,8 +51,10 @@ const handleLogin = async () => {
       },
     });
     
-    const { access_token } = response.data;
+    const { access_token, role, username: loggedInUsername } = response.data;
     localStorage.setItem('access_token', access_token);
+    localStorage.setItem('user_role', role);
+    localStorage.setItem('username', loggedInUsername);
     ElMessage.success('登录成功！');
     
     // Redirect to a dashboard or home page after login
