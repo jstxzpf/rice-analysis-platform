@@ -1,8 +1,12 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from datetime import date
 from pydantic import BaseModel
 from app.db.models import AnalysisStatusEnum
+
+# 为了避免循环导入，我们只在类型检查时导入
+if TYPE_CHECKING:
+    from .analysis_result import AnalysisResult
 
 class PhotoGroupBase(BaseModel):
     capture_date: date
@@ -25,7 +29,8 @@ class PhotoGroupInDBBase(PhotoGroupBase):
         from_attributes = True
 
 class PhotoGroup(PhotoGroupInDBBase):
-    analysis_result: Optional['AnalysisResult'] = None  # Use string reference to avoid circular import
+    # 使用字符串类型声明避免循环导入
+    analysis_result: Optional['AnalysisResult'] = None
 
     class Config:
         from_attributes = True

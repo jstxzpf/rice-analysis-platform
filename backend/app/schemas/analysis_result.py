@@ -1,7 +1,11 @@
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from pydantic import BaseModel
 from datetime import date
+
+# 为了避免循环导入，我们只在类型检查时导入
+if TYPE_CHECKING:
+    from .photogroup import PhotoGroup
 
 class AnalysisResultBase(BaseModel):
     coverage: Optional[float] = None
@@ -20,6 +24,9 @@ class AnalysisResultBase(BaseModel):
     gemini_suggestions: Optional[str] = None
     pest_risk: Optional[str] = None
     leaf_color_health: Optional[str] = None
+    estimated_row_spacing_cm: Optional[float] = None
+    estimated_plant_spacing_cm: Optional[float] = None
+    seedlings_per_mu: Optional[float] = None
 
 class AnalysisResultCreate(AnalysisResultBase):
     pass
@@ -27,7 +34,8 @@ class AnalysisResultCreate(AnalysisResultBase):
 class AnalysisResult(AnalysisResultBase):
     id: int
     photo_group_id: int
-    photo_group: Optional['PhotoGroup'] = None  # Use string reference to avoid circular import
+    # 使用字符串类型声明避免循环导入
+    photo_group: Optional['PhotoGroup'] = None
 
     class Config:
         from_attributes = True
